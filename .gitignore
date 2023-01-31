@@ -6,7 +6,9 @@
 
 # Ignore bundler config.
 /.bundle
-
+env.rb
+embedding.csv
+book.pdf
 # Ignore all logfiles and tempfiles.
 /log/*
 /tmp/*
