@@ -9,6 +9,8 @@
 env.rb
 embedding.csv
 book.pdf
+s3_dem.rb
+.env
 # Ignore all logfiles and tempfiles.
 /log/*
 /tmp/*

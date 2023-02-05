@@ -44,6 +44,9 @@ gem "bootsnap", require: false
 
 gem 'pdf-reader'
 gem 'ruby-openai'
+gem 'aws-sdk-s3', '~> 1.114'
+gem "matrix", "~> 0.4.2"
+gem "dotenv-rails"
 
 # Use Sass to process CSS
 # gem "sassc-rails"
@@ -73,3 +76,5 @@ group :test do
   gem "selenium-webdriver"
   gem "webdrivers"
 end
+
+
