@@ -1,0 +1,13 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  question: MyString
+  answer: MyString
+  audio_src_url: MyString
+  context: MyString
+
+two:
+  question: MyString
+  answer: MyString
+  audio_src_url: MyString
+  context: MyString

@@ -6,10 +6,12 @@ const App = () => {
   const [answer, setAnswer] = React.useState(null)
   const [loading, setLoading] = React.useState(false)
 
+  const [file, setFile] = React.useState({})
+
   React.useEffect(() => {
     fetch('/home/load', {
       method: 'GET',
-    }).then(res => console.log(res.json))
+    }).then(res => res.json()).then(res => console.log(res))
   }, [])
 
   const token = document.querySelector('meta[name="csrf-token"]').content
@@ -25,9 +27,29 @@ const App = () => {
         'Content-Type': 'application/json'
       },
     })
+    console.log(response)
+    console.log(response.body)
     const data = await response.json()
+    console.log(data)
     setAnswer(data.answer)
     setLoading(false)
+  }
+
+  const handleFileUpload = (e) => {
+    console.log(e.target.files[0])
+    setFile(e.target.files[0])
+  }
+
+  const handleFileSubmit = async (e) => {
+    e.preventDefault()
+    const form = new FormData()
+    form.append("pdf", file)
+    const response = await fetch(`/home/pdf`, {
+      method: "POST",
+      body: form
+    })
+    const data = await response.json()
+    console.log(data)
   }
 
   return (<div>
@@ -42,6 +64,18 @@ const App = () => {
       <input type="submit" />
     </form>
     {loading ? <p>Loading</p> : <p>{answer}</p>}
+
+    <form onSubmit={handleFileSubmit}>
+      <label>Choose PDF:
+        <input
+          type="file"
+          accept="image/jpeg" /// for images
+          onChange={handleFileUpload}
+        />
+      </label>
+      <input type="submit" />
+    </form>
+
 
   </div>);
 };

@@ -33,22 +33,60 @@ module HomeHelper
     end
 
     ### ASK QUESTION FUNCTIONS ###
-    def get_embedding(text, model)
+    def process_question(question)
+        if question[-1] != '?'
+            question += '?'
+        end
+        return question.downcase.strip
+    end
+
+    def find_duplicate_question(question, q_embedding)
+        # check if question string exist in db
+        puts Question.where(question: question)
+
+        # check for similiar questions
+        answer = find_similiar_question(q_embedding)
+        return answer
+    end
+
+    def find_similiar_question(q_embedding)
+        @embedding_hash =  Hash.new() #Question.pluck(:id, :embedding).uniq
+        @embedding_list = Question.select("embedding")
+        puts "embedding_list:"
+        puts @embedding_list
+        # @temp = @embedding_list.map(|x| vector_similarity(x, q_embedding))
+        @embedding_list.each {|id, embedding|
+            sim = vector_similarity(embedding, q_embedding)
+            if sim > 0.96
+                @embedding_hash[id] = sim
+            end}
+        puts "embedding_hash:"
+        if @embedding_hash.size >= 1
+            # max_sim = @embedding_hash.max_by{|k,v| v}
+            question_key = @embedding_hash.key(@embedding_hash.values.max)
+            temp = Question.where(question: question_key)
+            return temp
+
+        end
+        return nil
+    end
+
+    def get_embedding(text, model=EMBEDDING_MODEL)
         client.embeddings(
             parameters: {
                 model: model,
                 input: text
             }
-        )
+        )["data"][0]["embedding"]
     end
 
     def vector_similarity(x, y)
         return Vector.send(:new, x).inner_product(Vector.send(:new, y))
     end
 
-    def order_document_sections_by_query_similarity(query, context)
-        data = get_embedding(query, EMBEDDING_MODEL)
-        query_embedding = data["data"][0]["embedding"]
+    def order_document_sections_by_query_similarity(query_embedding, context)
+        # data = get_embedding(query, EMBEDDING_MODEL)
+        # query_embedding = data["data"][0]["embedding"]
         document_similarities = Hash.new()
         puts "context in order_document_sections_by_query_similarity:"
         puts context
@@ -75,8 +113,8 @@ module HomeHelper
         return chosen_sections
     end
 
-    def construct_query_promopt(embedding, question, header, questions)
-        most_relevant_document_sections = order_document_sections_by_query_similarity(question, embedding)
+    def construct_query_promopt(embedding, question, header, question_embedding)
+        most_relevant_document_sections = order_document_sections_by_query_similarity(question_embedding, embedding)
         chosen_sections = choose_sections(embedding, most_relevant_document_sections)
 
 
@@ -107,11 +145,10 @@ module HomeHelper
         )
     end
 
-    def ask(question, embedding)
+    def ask(question, question_embedding, embedding)
         header = """Sahil Lavingia is the founder and CEO of Gumroad, and the author of the book The Minimalist Entrepreneur (also known as TME). These are questions and answers by him. Please keep your answers to three sentences maximum, and speak in complete sentences. Stop speaking once your point is made.\n\nContext that may be useful, pulled from The Minimalist Entrepreneur:\n"""
         prompt = construct_query_promopt(embedding, question, header, [])
         answer = ask_question(prompt)
-        puts prompt
-        return answer["choices"][0]["text"]
+        return answer["choices"][0]["text"], prompt
     end
 end

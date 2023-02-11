@@ -1,5 +1,5 @@
 Rails.application.routes.draw do
-  root 'components#index'
+  root 'home#index'
   post 'home/ask'
   get 'home/load'
 end
