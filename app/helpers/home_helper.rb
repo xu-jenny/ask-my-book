@@ -3,6 +3,30 @@ module HomeHelper
     COMPLETIONS_MODEL = "text-davinci-003"
     MAX_SECTION_LEN = 1000
 
+    # def generate_key(file_name)
+    #     # Append a unique id to distinguish 2 files with same name.
+    #     # We can use timestamp as well in place of uuid.
+    #     random_file_key = SecureRandom.uuid
+    #     "#{Rails.env}/attachment/#{random_file_key}-#{file_name}"
+    #   end
+
+    # def upload_file(file, objKey, body)
+    #     Aws.config.update(
+    #         region: 'us-east-1',
+    #         credentials: Aws::Credentials.new(ENV['AWS_ACCESS_KEY'], ENV['AWS_SECRET_ACCESS_KEY'])
+    #     )
+    #     s3_client = Aws::S3::Client.new(region: 'us-east-1')
+    #     s3_bucket = Aws::S3::Resource.new.bucket(
+    #         Rails.application.credentials.aws.fetch("ask-my-book")
+    #     )
+    #     s3_client.put_object(
+    #         bucket: "askmybook",
+    #         key: objKey,
+    #         body: body
+    #     )
+    # end
+
+
     def client() = OpenAI::Client.new(access_token: ENV['OPENAI_ACCESS_TOKEN'])
 
     def download_object(filename, bucketName, objKey)
@@ -37,38 +61,60 @@ module HomeHelper
         if question[-1] != '?'
             question += '?'
         end
-        return question.downcase.strip
+        return question.downcase.strip.squish.tr('"', "'")
     end
 
     def find_duplicate_question(question, q_embedding)
         # check if question string exist in db
-        puts Question.where(question: question)
+        q = Question.find_by question: question
+        if q != nil
+            return q.answer
+        end
+        # todo: check for similar questions arr
 
-        # check for similiar questions
-        answer = find_similiar_question(q_embedding)
+        # check for similiar questions using vec_sim
+        answer = find_similiar_question(question, q_embedding)
         return answer
     end
 
-    def find_similiar_question(q_embedding)
-        @embedding_hash =  Hash.new() #Question.pluck(:id, :embedding).uniq
-        @embedding_list = Question.select("embedding")
-        puts "embedding_list:"
-        puts @embedding_list
-        # @temp = @embedding_list.map(|x| vector_similarity(x, q_embedding))
-        @embedding_list.each {|id, embedding|
-            sim = vector_similarity(embedding, q_embedding)
-            if sim > 0.96
-                @embedding_hash[id] = sim
-            end}
-        puts "embedding_hash:"
-        if @embedding_hash.size >= 1
-            # max_sim = @embedding_hash.max_by{|k,v| v}
-            question_key = @embedding_hash.key(@embedding_hash.values.max)
-            temp = Question.where(question: question_key)
-            return temp
-
+    def find_similiar_question(question, q_embedding)
+        @answers = []
+        Question.pluck(:embedding, :answer).each do |e|
+            puts e[0].length()
+            sim = vector_similarity(e[0].map(&:to_f), q_embedding)
+            puts sim
+            if sim > 0.97
+                @answers << [sim, e[1]]
+            end
+        end
+        puts @answers
+        if @answers.length() > 0
+            return @answers.sort_by{|x,y|x}[0][1]
         end
         return nil
+        # @embedding_hash = Hash.new() #Question.pluck(:id, :embedding).uniq
+        # @embedding_list = Question.select("embedding")
+
+        # Question.pluck(:embedding).each do |e|
+        #     sim = vector_similarity(e.map(&:to_i), q_embedding)
+        #     @embedding_hash[id] = sim
+        # end
+
+        # @temp = @embedding_list.map(|x| vector_similarity(x, q_embedding))
+        # @embedding_list.each {|id, embedding|
+        #     sim = vector_similarity(embedding, q_embedding)
+        #     if sim > 0.96
+        #         @embedding_hash[id] = sim
+        #     end}
+        # puts "embedding_hash:"
+        # if @embedding_hash.size >= 1
+        #     # max_sim = @embedding_hash.max_by{|k,v| v}
+        #     question_key = @embedding_hash.key(@embedding_hash.values.max)
+        #     temp = Question.where(question: question_key)
+        #     return temp
+
+        # end
+        # return nil
     end
 
     def get_embedding(text, model=EMBEDDING_MODEL)
@@ -117,8 +163,6 @@ module HomeHelper
         most_relevant_document_sections = order_document_sections_by_query_similarity(question_embedding, embedding)
         chosen_sections = choose_sections(embedding, most_relevant_document_sections)
 
-
-
         # questions = ["\n\n\nQ: How to choose what business to start?\n\nA: First off don't be in a rush. Look around you, see what problems you or other people are facing, and solve one of these problems if you see some overlap with your passions or skills. Or, even if you don't see an overlap, imagine how you would solve that problem anyway. Start super, super small.",
         # "\n\n\nQ: Q: Should we start the business on the side first or should we put full effort right from the start?\n\nA:   Always on the side. Things start small and get bigger from there, and I don't know if I would ever “fully” commit to something unless I had some semblance of customer traction. Like with this product I'm working on now!",
         # "\n\n\nQ: Should we sell first than build or the other way around?\n\nA: I would recommend building first. Building will teach you a lot, and too many people use “sales” as an excuse to never learn essential skills like building. You can't sell a house you can't build!",
@@ -149,6 +193,6 @@ module HomeHelper
         header = """Sahil Lavingia is the founder and CEO of Gumroad, and the author of the book The Minimalist Entrepreneur (also known as TME). These are questions and answers by him. Please keep your answers to three sentences maximum, and speak in complete sentences. Stop speaking once your point is made.\n\nContext that may be useful, pulled from The Minimalist Entrepreneur:\n"""
         prompt = construct_query_promopt(embedding, question, header, [])
         answer = ask_question(prompt)
-        return answer["choices"][0]["text"], prompt
+        return answer["choices"][0]["text"]
     end
 end

@@ -46,7 +46,10 @@ const App = () => {
     form.append("pdf", file)
     const response = await fetch(`/home/pdf`, {
       method: "POST",
-      body: form
+      body: form,
+      headers: {
+        "X-CSRF-Token": token
+      },
     })
     const data = await response.json()
     console.log(data)
@@ -69,7 +72,7 @@ const App = () => {
       <label>Choose PDF:
         <input
           type="file"
-          accept="image/jpeg" /// for images
+          accept="application/pdf"
           onChange={handleFileUpload}
         />
       </label>
