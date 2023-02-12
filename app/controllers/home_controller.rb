@@ -48,25 +48,30 @@ class HomeController < ApplicationController
 
     def load_tme
         embedding_filepath = "./embeddings.csv"
-        helpers.download_object(embedding_filepath, "askmybook", "minimalist_entrepreneur_embedding.csv")
+        # helpers.download_object(embedding_filepath, "askmybook", "minimalist_entrepreneur_embedding.csv")
         $embedding = helpers.load_embedding_csv(embedding_filepath)
+        puts "finish loading embedding"
     end
     def ask
         @question = helpers.process_question(ask_params[:question])
         question_cache = Rails.cache.read(@question)
         if question_cache == nil
             puts "question not in cache"
-            # TODO: query for similiar question beforehand
             @q_embedding = helpers.get_embedding(@question)
             answer = helpers.find_duplicate_question(@question, @q_embedding)
+            puts "answer from duplicate question:"
+            puts answer
             if answer != nil
                 return render json: { answer: answer}
             end
-            # questino does not exist, hit OpenAI for answer
-            answer = helpers.ask(@question, @q_embedding, $embedding)
-            puts answer
-            Question.create({ question: @question, answer: answer, embedding: @q_embedding, count: 1})
-            Rails.cache.write(@question, answer, expires_in: 1.minute)
+            # questinon does not exist, hit OpenAI for answer
+            puts "question not in db"
+            # answer = helpers.ask(@question, @q_embedding, $embedding)
+            answer = "answer from openAI"
+            # # request.params[:item_id] = @question
+            # # res = QuestionController.dispatch(:create, request, response)
+            Question.create({ question: @question, answer: answer, embedding: @q_embedding, similiarq: ""})
+            # Rails.cache.write(@question, answer, expires_in: 1.minute)
             return render json: { answer: answer}
         else
             return render json: { answer: question_cache }

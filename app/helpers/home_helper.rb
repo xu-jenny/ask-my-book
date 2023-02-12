@@ -64,6 +64,10 @@ module HomeHelper
         return question.downcase.strip.squish.tr('"', "'")
     end
 
+    def find_similiar_question(question)
+        Question.where
+    end
+
     def find_duplicate_question(question, q_embedding)
         # check if question string exist in db
         q = Question.find_by question: question
@@ -71,25 +75,39 @@ module HomeHelper
             return q.answer
         end
         # todo: check for similar questions arr
-
-        # check for similiar questions using vec_sim
-        answer = find_similiar_question(question, q_embedding)
-        return answer
+        q = Question.where("similiarq LIKE ?", "%"+question+"%")
+        puts "similiar q:"
+        puts q.any?
+        puts q[0]
+        puts q[0].answer
+        if q.any?
+            return q[0].answer
+        end
+        puts "check for similiar questions using vec_sim"
+        # answer = find_similiar_question_vec(question, q_embedding)
+        # return answer
     end
 
-    def find_similiar_question(question, q_embedding)
+    def find_similiar_question_vec(question, q_embedding)
         @answers = []
         Question.pluck(:embedding, :answer).each do |e|
-            puts e[0].length()
-            sim = vector_similarity(e[0].map(&:to_f), q_embedding)
+            puts e[0].class
+            puts e[0].split.length()
+            sim = vector_similarity(e[0].split.map(&:to_f), q_embedding)
             puts sim
             if sim > 0.97
                 @answers << [sim, e[1]]
             end
         end
-        puts @answers
+        # puts @answers
         if @answers.length() > 0
-            return @answers.sort_by{|x,y|x}[0][1]
+            top_answer = @answers.sort_by{|x,y|x}[0][1]
+            q = Question.find_by answer: top_answer
+            puts q
+            #  check if not aldrey exist
+            q.similiarq << question
+            puts q.similiarq
+            q.save
         end
         return nil
         # @embedding_hash = Hash.new() #Question.pluck(:id, :embedding).uniq
@@ -135,7 +153,7 @@ module HomeHelper
         # query_embedding = data["data"][0]["embedding"]
         document_similarities = Hash.new()
         puts "context in order_document_sections_by_query_similarity:"
-        puts context
+        # puts context
         context.each do |key, page|
             sim = vector_similarity(query_embedding, page[0])
             document_similarities[key] = sim
@@ -191,7 +209,7 @@ module HomeHelper
 
     def ask(question, question_embedding, embedding)
         header = """Sahil Lavingia is the founder and CEO of Gumroad, and the author of the book The Minimalist Entrepreneur (also known as TME). These are questions and answers by him. Please keep your answers to three sentences maximum, and speak in complete sentences. Stop speaking once your point is made.\n\nContext that may be useful, pulled from The Minimalist Entrepreneur:\n"""
-        prompt = construct_query_promopt(embedding, question, header, [])
+        prompt = construct_query_promopt(embedding, question, header, question_embedding)
         answer = ask_question(prompt)
         return answer["choices"][0]["text"]
     end

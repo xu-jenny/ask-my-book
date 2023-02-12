@@ -3,11 +3,11 @@
 one:
   question: MyString
   answer: MyString
-  audio_src_url: MyString
-  context: MyString
+  embedding: MyText
+  similiarq: MyText
 
 two:
   question: MyString
   answer: MyString
-  audio_src_url: MyString
-  context: MyString
+  embedding: MyText
+  similiarq: MyText

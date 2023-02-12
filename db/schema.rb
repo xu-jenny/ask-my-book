@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.0].define(version: 2023_02_06_051302) do
+ActiveRecord::Schema[7.0].define(version: 2023_02_11_215942) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
 
@@ -43,13 +43,12 @@ ActiveRecord::Schema[7.0].define(version: 2023_02_06_051302) do
   end
 
   create_table "questions", force: :cascade do |t|
-    t.string "question", null: false
-    t.string "answer", null: false
-    t.string "audio_src_url"
-    t.string "context", null: false
+    t.string "question"
+    t.string "answer"
+    t.text "embedding"
+    t.text "similiarq"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.text "embedding", default: [], array: true
   end
 
   add_foreign_key "active_storage_attachments", "active_storage_blobs", column: "blob_id"
