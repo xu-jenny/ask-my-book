@@ -38,9 +38,20 @@ end
 # question2="Why did you choose the name 'the minimalist entrepreneur' for your book?"
 # 0.9770928016033772
 
+# question1="what year did you found gumroad?"
+# question2="when did you start gumroad?"
+# 0.9524197543040651
+
 # question1="What is one business that you think is ripe for a minimalist Entrepreneur innovation that isn't currently being pursued by your community?"
 # question2="Tell me a business idea for the minimalist entrepreneur that isn't being pursued yet"
 # 0.9362871755185718
+
+# question1="What can I expect to learn from your book?"
+# question2="What will I learn from reading your book?"
+
+# question1="how long did it take you to write the book?"
+# question2="how long did you spent on writing the book?"
+# 0.9695449778399635
 
 e1 = get_embedding(question1)
 e2 = get_embedding(question2)
